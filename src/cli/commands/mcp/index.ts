@@ -4,6 +4,13 @@ import { exec } from '../../../utils/exec.js';
 import { getCommandPath } from '../../../utils/processes.js';
 import { resolveHomeDir } from '../../../utils/paths.js';
 
+async function ensureProxyCommandExists(): Promise<void> {
+  const proxyCommand = await getCommandPath('codemie-mcp-proxy');
+  if (!proxyCommand) {
+    throw new Error('proxy-not-found');
+  }
+}
+
 async function resolveClaudeCommand(): Promise<{ command: string; shell: boolean }> {
   if (process.platform !== 'win32') {
     const fullPath = resolveHomeDir('.local/bin/claude');
@@ -26,13 +33,6 @@ async function resolveClaudeCommand(): Promise<{ command: string; shell: boolean
     command: claudeCommand,
     shell: os.platform() === 'win32',
   };
-}
-
-async function ensureProxyCommandExists(): Promise<void> {
-  const proxyCommand = await getCommandPath('codemie-mcp-proxy');
-  if (!proxyCommand) {
-    throw new Error('proxy-not-found');
-  }
 }
 
 function createMcpAddCommand(): Command {
