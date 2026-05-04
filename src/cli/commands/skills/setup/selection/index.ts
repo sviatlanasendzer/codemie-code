@@ -1,22 +1,18 @@
 import type { CodeMieClient } from 'codemie-sdk';
-import { ACTIONS } from '@/cli/commands/assistants/constants.js';
-import type { ProviderProfile, CodemieAssistant } from '@/env/types.js';
-import type { SetupCommandOptions } from '../index.js';
+import type { CodemieSkill } from '@/env/types.js';
 import type { SelectionState } from './types.js';
 import { PANEL_ID, ANSI } from './constants.js';
-import { createDataFetcher } from '../data.js';
+import { ACTION_TYPE, type ActionType } from '../constants.js';
+import { createSkillDataFetcher } from '../data.js';
 import { createInteractivePrompt, type InteractivePrompt } from './interactive-prompt.js';
 import { createActionHandlers } from './actions.js';
 import { renderUI } from './ui.js';
 import { logger } from '@/utils/logger.js';
 import ora from 'ora';
 
-type ActionType = typeof ACTIONS.UPDATE | typeof ACTIONS.CANCEL;
-
 export interface SelectionOptions {
   registeredIds: Set<string>;
-  config: ProviderProfile;
-  options: SetupCommandOptions;
+  registeredSkills: CodemieSkill[];
   client: CodeMieClient;
 }
 
@@ -31,10 +27,10 @@ const DEFAULT_PANEL_PARAMS = {
   totalPages: 0,
 };
 
-function initializeState(registeredAssistants: CodemieAssistant[]): SelectionState {
-  const registeredIds = new Set(registeredAssistants.map(a => a.id));
-  const hasRegisteredAssistants = registeredIds.size > 0;
-  const defaultPanelId = hasRegisteredAssistants
+function initializeState(registeredSkills: CodemieSkill[]): SelectionState {
+  const registeredIds = new Set(registeredSkills.map(s => s.id));
+  const hasRegisteredSkills = registeredIds.size > 0;
+  const defaultPanelId = hasRegisteredSkills
     ? PANEL_ID.REGISTERED
     : PANEL_ID.PROJECT;
 
@@ -62,7 +58,7 @@ function initializeState(registeredAssistants: CodemieAssistant[]): SelectionSta
     searchQuery: '',
     selectedIds: new Set(registeredIds),
     registeredIds: registeredIds,
-    registeredAssistants: registeredAssistants,
+    registeredSkills: registeredSkills,
     isSearchFocused: false,
     isPaginationFocused: null,
     areNavigationButtonsFocused: false,
@@ -70,30 +66,33 @@ function initializeState(registeredAssistants: CodemieAssistant[]): SelectionSta
   };
 }
 
-export async function promptAssistantSelection(
-  config: ProviderProfile,
-  options: SetupCommandOptions,
+export async function promptSkillSelection(
+  registeredSkills: CodemieSkill[],
   client: CodeMieClient
 ): Promise<{ selectedIds: string[]; action: ActionType }> {
-  const state = initializeState(config.codemieAssistants || []);
-  const fetcher = createDataFetcher({ config, client, options });
+  const state = initializeState(registeredSkills);
+  const fetcher = createSkillDataFetcher({ client, registeredSkills });
 
   let prompt: InteractivePrompt | null = null;
   let isCancelled = false;
 
   const actionHandlers = createActionHandlers({
     state,
-    fetchItems: (params) => fetcher.fetchAssistants(params),
-    entityLabel: 'Assistant',
+    fetchItems: (params) => fetcher.fetchSkills(params),
+    entityLabel: 'Skill',
     prompt: () => prompt,
     setPrompt: (p) => { prompt = p; },
     setCancelled: (cancelled) => { isCancelled = cancelled; },
   });
 
-  const spinner = ora('Loading assistants...').start();
-  const activePanel = state.panels.find(p => p.id === state.activePanelId)!;
+  const spinner = ora('Loading skills...').start();
+  const activePanel = state.panels.find(p => p.id === state.activePanelId);
+  if (!activePanel) {
+    spinner.fail('Failed to initialize panel');
+    return { selectedIds: [], action: ACTION_TYPE.CANCEL };
+  }
   try {
-    const result = await fetcher.fetchAssistants({
+    const result = await fetcher.fetchSkills({
       scope: state.activePanelId,
       searchQuery: state.searchQuery,
       page: 0,
@@ -102,9 +101,9 @@ export async function promptAssistantSelection(
     activePanel.filteredData = result.data;
     activePanel.totalItems = result.total;
     activePanel.totalPages = result.pages;
-    spinner.succeed('Assistants loaded');
+    spinner.succeed('Skills loaded');
   } catch (error) {
-    spinner.fail('Failed to load assistants');
+    spinner.fail('Failed to load skills');
     activePanel.error = error instanceof Error ? error.message : 'Unknown error';
     activePanel.totalItems = 0;
     activePanel.totalPages = 0;
@@ -121,17 +120,17 @@ export async function promptAssistantSelection(
   await prompt.start();
 
   if (isCancelled) {
-    logger.debug('[AssistantSelection] Selection cancelled');
-    return { selectedIds: [], action: ACTIONS.CANCEL };
+    logger.debug('[SkillSelection] Selection cancelled');
+    return { selectedIds: [], action: ACTION_TYPE.CANCEL };
   }
 
   const selectedIdsArray = Array.from(state.selectedIds);
-  logger.debug('[AssistantSelection] Returning selection', {
+  logger.debug('[SkillSelection] Returning selection', {
     totalSelected: selectedIdsArray.length,
     selectedIds: selectedIdsArray,
     registeredCount: state.registeredIds.size,
     registeredIds: Array.from(state.registeredIds),
   });
 
-  return { selectedIds: selectedIdsArray, action: ACTIONS.UPDATE };
+  return { selectedIds: selectedIdsArray, action: ACTION_TYPE.UPDATE };
 }

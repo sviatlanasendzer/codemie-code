@@ -31,6 +31,7 @@ CodeMie CLI is the all-in-one AI coding assistant for developers.
 - ⚡ **Productivity Boost** - Code review, refactoring, test generation, and bug fixing.
 - 🎯 **Profile Management** - Manage work, personal, and team configurations separately.
 - 🧩 **CodeMie Assistants in Claude** - Connect your available CodeMie assistants as Claude subagents or skills.
+- 🛠️ **CodeMie Platform Skills** - Install CodeMie platform skills directly as Claude Code slash commands with auto-sync.
 - 📊 **Usage Analytics** - Track and analyze AI usage across all agents with detailed insights.
 - 🔧 **CI/CD Workflows** - Automated code review, fixes, and feature implementation.
 
@@ -299,6 +300,30 @@ You can also message a registered assistant directly through CodeMie:
 ```bash
 codemie assistants chat "assistant-id" "Review this API design"
 ```
+
+### CodeMie Platform Skills in Claude
+
+In addition to assistants, CodeMie platform skills can be installed directly as Claude Code slash commands.
+
+```bash
+# Browse and register CodeMie platform skills
+codemie setup skills
+```
+
+During setup:
+1. A disclaimer is shown — skills are installed **without tools or MCP servers**. If you need tools, create an assistant with the skill attached and use `codemie setup assistants` instead.
+2. Choose storage scope: **Global** (available in all projects) or **Local** (project-scoped, overrides global).
+3. Select which skills to register or unregister from your CodeMie account.
+
+After registration, use them directly in Claude Code:
+
+```text
+/skill-name run the skill
+```
+
+Skills are automatically synced on every Claude agent startup, so the local SKILL.md files stay up to date with the latest content from the CodeMie platform.
+
+> **Tip:** For skills that require MCP servers or tools, use `codemie setup assistants` instead.
 
 ### Claude Code Built-in Commands
 

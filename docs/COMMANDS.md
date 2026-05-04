@@ -8,6 +8,8 @@ codemie --version                # Show version information
 codemie --task "task"            # Execute single task with built-in agent and exit
 
 codemie setup                    # Interactive configuration wizard
+codemie setup skills             # Manage CodeMie platform skills (register/unregister)
+codemie setup assistants         # Manage CodeMie assistants as Claude subagents or skills
 codemie profile <command>        # Manage provider profiles
 codemie analytics [options]      # View usage analytics
 codemie log [options]            # View and manage debug logs and sessions
@@ -665,6 +667,72 @@ codemie setup [options]
 - Health endpoint testing during setup
 - Profile management (add new or update existing)
 - Credential validation before saving
+
+#### `codemie setup skills`
+
+Manage CodeMie platform skills — browse, register, or unregister skills from your CodeMie account as Claude Code slash commands.
+
+**Usage:**
+```bash
+codemie setup skills [options]
+```
+
+**Options:**
+- `--profile <name>` - Profile to use (defaults to active profile)
+- `-v, --verbose` - Enable verbose debug output
+
+**Workflow:**
+1. Shows a disclaimer: skills are installed **without tools or MCP servers**. If you need tools or MCP servers with a skill, attach it to an assistant and use `codemie setup assistants` instead.
+2. Prompts for storage scope: **Global** (saved to `~/.codemie/codemie-cli.config.json`, available in all projects) or **Local** (saved to `.codemie/codemie-cli.config.json`, overrides global for the current repository).
+3. Opens an interactive selection UI — check/uncheck skills to register or unregister.
+
+**Features:**
+- Browse all skills available in your CodeMie account
+- Register selected skills as Claude Code `/skill-name` slash commands
+- Unregister skills you no longer need
+- Global vs. local scope (local config overrides global per-repository)
+- Auto-sync on agent startup — SKILL.md files are refreshed with the latest content from the platform each time Claude starts
+
+**After registration**, invoke skills directly in Claude Code:
+```text
+/skill-name run the skill
+```
+
+#### `codemie setup assistants`
+
+Manage CodeMie assistants — browse, register, or unregister assistants from your CodeMie account as Claude Code subagents or slash commands.
+
+**Usage:**
+```bash
+codemie setup assistants [options]
+```
+
+**Options:**
+- `--profile <name>` - Profile to use (defaults to active profile)
+- `--project <project>` - Filter assistants by project name
+- `--all-projects` - Show assistants from all projects
+- `-v, --verbose` - Enable verbose debug output
+
+**Workflow:**
+1. Prompts for storage scope: **Global** (saved to `~/.codemie/codemie-cli.config.json`) or **Local** (saved to `.codemie/codemie-cli.config.json`, overrides global for the current repository).
+2. Opens an interactive selection UI — check/uncheck assistants to register or unregister.
+3. Prompts for registration mode:
+   - **Claude Subagents** — registers all selected assistants as `@slug` subagents
+   - **Claude Skills** — registers all selected assistants as `/slug` slash commands
+   - **Manual Configuration** — choose subagent or skill per individual assistant
+
+**Features:**
+- Assistants are registered **with their tools and MCP servers** (unlike platform skills)
+- Global vs. local scope (local config overrides global per-repository)
+- Re-registration on each run keeps assistant definitions up to date
+
+**After registration**, use assistants from Claude Code:
+```text
+@assistant-slug Review this authentication flow
+/assistant-slug prepare a release checklist
+```
+
+> **Tip:** For lightweight skills without tools, use `codemie setup skills` instead.
 
 ### `codemie list`
 
