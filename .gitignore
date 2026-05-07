@@ -69,3 +69,8 @@ local/*
 MCP directories
 /.serena/
 /.agents/skills/bmad*
+ 
+/input/
+/final/
+/output/
+/ppt/
