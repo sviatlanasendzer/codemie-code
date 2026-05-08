@@ -85,6 +85,13 @@ export interface SyncState {
   conversations?: ConversationsSyncState;
 }
 
+export interface RuntimeCheckpoint {
+  externalSessionId: string;
+  transcriptPath: string;
+  lastDiscoveredAt: number;
+  lastSeenActivityAt?: number;
+}
+
 /**
  * Session metadata (stored in ~/.codemie/sessions/{sessionId}.json)
  * Contains session info and sync state for all processors.
@@ -103,6 +110,7 @@ export interface Session {
   endTime?: number; // Unix timestamp (ms)
   workingDirectory: string; // CWD where agent was launched
   gitBranch?: string; // Git branch at session start (optional, detected from workingDirectory)
+  repository?: string; // Resolved repository identifier: owner/repo from git remote, or parent/current fallback
 
   correlation: CorrelationResult;
   status: SessionStatus;
@@ -114,4 +122,7 @@ export interface Session {
 
   // Hierarchical sync state
   sync?: SyncState;
+
+  // Runtime state for local telemetry clients that are discovered via polling
+  runtimeCheckpoint?: RuntimeCheckpoint;
 }

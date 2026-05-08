@@ -1,14 +1,15 @@
 ---
 name: msgraph
 description: >
-  Work with Microsoft 365 services via the Graph API — emails, calendar events, SharePoint sites,
-  Teams chats, OneDrive files, OneNote notebooks, contacts, and org chart. Use this skill whenever
-  the user asks about their emails, inbox, unread messages, meetings, calendar, Teams messages or
-  chats, SharePoint documents, OneDrive files, OneNote notes or notebooks, colleagues, manager,
-  direct reports, or any personal/organizational Microsoft data. Invoke proactively any time the
-  user mentions Outlook, Teams, SharePoint, OneDrive, OneNote, or wants to interact with their
-  Microsoft 365 account. The skill uses a local Node.js CLI (msgraph.js) that handles
-  authentication, token caching, and all API calls.
+  Work with Microsoft 365 services via the Graph API — emails, calendar events, SharePoint sites
+  (read and write), Teams chats and channel messages, OneDrive files, OneNote notebooks, contacts,
+  and org chart. Use this skill whenever the user asks about their emails, inbox, unread messages,
+  meetings, calendar, Teams messages or chats, channel messages, SharePoint documents, OneDrive
+  files, OneNote notes or notebooks, colleagues, manager, direct reports, or any
+  personal/organizational Microsoft data. Invoke proactively any time the user mentions Outlook,
+  Teams, SharePoint, OneDrive, OneNote, or wants to interact with their Microsoft 365 account.
+  The skill uses a local Node.js CLI (msgraph.js) that handles authentication, token caching,
+  and all API calls.
 ---
 
 # Microsoft Graph API Skill
@@ -36,14 +37,15 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js status
 node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js login
 ```
 
-This starts the **Device Code Flow** — it will print a URL and a short code like:
-```
-To sign in, use a web browser to open the page https://microsoft.com/devicelogin
-and enter the code ABCD-1234 to authenticate.
-```
+This opens the **system browser** for Microsoft authentication (PKCE flow). If the browser
+does not open automatically, a URL will be printed in the terminal — navigate to it manually.
+After successful sign-in, the token is cached at `~/.ms_graph_token_cache.json` and all
+subsequent commands run silently.
 
-Tell the user exactly that message, then wait. Once they complete login in the browser,
-the token is cached at `~/.ms_graph_token_cache.json` and all subsequent commands run silently.
+Use `--force` to re-authenticate even when already logged in:
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js login --force
+```
 
 ### When NOT logged in or token expired
 
@@ -53,7 +55,8 @@ If status returns `NOT_LOGGED_IN` or `TOKEN_EXPIRED`, tell the user:
 > ```
 > node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js login
 > ```
-> A code and URL will appear — open the URL in your browser and enter the code."
+> Your browser will open for Microsoft sign-in. If it doesn't open automatically, a URL
+> will appear in the terminal — navigate to it to complete authentication."
 
 ---
 
@@ -196,6 +199,19 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js onenote --create "M
 node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js onenote --notebooks --json
 ```
 
+### Channels
+
+```bash
+# List channels in a team (use team ID from teams --teams-list)
+node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js channels --team-id TEAM_ID --list
+
+# Read recent messages in a channel
+node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js channels --team-id TEAM_ID --channel-id CHANNEL_ID --messages
+
+# Post a message to a channel
+node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js channels --team-id TEAM_ID --channel-id CHANNEL_ID --send "Hello channel!"
+```
+
 ### Transcripts
 
 ```bash
@@ -271,6 +287,11 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/msgraph/scripts/msgraph.js people --contacts
 1. Run `transcripts --start YYYY-MM-DD` → lists all online meetings for the day
 2. Run `transcripts --meeting MEETING_ID` → lists available transcripts per meeting
 3. Run `transcripts --meeting MEETING_ID --transcript TRANSCRIPT_ID --output meeting.txt` → saves each transcript
+
+### "Post a message to a Teams channel"
+1. Run `teams --teams-list` → get the team ID
+2. Run `channels --team-id TEAM_ID --list` → get the channel ID
+3. Run `channels --team-id TEAM_ID --channel-id CHANNEL_ID --send "message"`
 
 ### "Who's my manager?" / "Who reports to me?"
 - Run `org --manager` or `org --reports`
